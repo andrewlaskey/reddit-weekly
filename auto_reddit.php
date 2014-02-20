@@ -69,8 +69,9 @@
 									if (strpos($link->data->url, 'imgur.com') !== false) {
 									    $message.= "<img src='" . $link->data->url . "' width='300' height='auto' alt='imgur pic'>";
 									} else {
-										$message.= $link->data->url . "</p>";
+										$message.= $link->data->url;
 									}
+									$message.= "</p>";
 								}
 
 						  		mail($to,$subject,$message,$headers);
