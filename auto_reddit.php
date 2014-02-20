@@ -66,7 +66,11 @@
 
 						  		foreach ($submissions as $link) {
 									$message.= "<p>" . $link->data->title . "<br />";
-									$message.= $link->data->url . "</p>";
+									if (strpos($link->data->url, 'imgur.com') !== false) {
+									    $message.= "<img src='" . $link->data->url . "' width='300' height='auto' alt='imgur pic'>";
+									} else {
+										$message.= $link->data->url . "</p>";
+									}
 								}
 
 						  		mail($to,$subject,$message,$headers);
