@@ -1,6 +1,5 @@
 <?php
 
-	//Get the list of subscribers and ship out
 	require("db_info.php");
 
 	// Opens a connection to a MySQL server
@@ -13,6 +12,7 @@
 
 		if ($db_selected) {
 
+			//Check db to see if sending anything out today
 			$today = date("w");
 
 			$sql = sprintf("SELECT * FROM calendar WHERE run_day = %s",
@@ -29,7 +29,7 @@
 
 					if ($sendmail) {
 
-						//Compile the list
+						//Compile the list of top 2 submissions for each sub reddit in past week
 						$submissions = array();
 
 						$sql = sprintf("SELECT * FROM topics WHERE topic = '%s'",
