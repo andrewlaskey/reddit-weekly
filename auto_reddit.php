@@ -1,80 +1,92 @@
 <?php
 
-	$today = date("w");
+	//Get the list of subscribers and ship out
+	require("db_info.php");
 
-	if ($today == 1) {
-		$title = "news";
-		$sendmail = true;
-	} elseif ($today == 3) {
-		$title = "politics";
-		$sendmail = true;
-	}
+	// Opens a connection to a MySQL server
+	$connection = mysql_connect ("localhost", $username, $password);
 
-	if ($sendmail) {
+	if ($connection) {
 
-		//Get the list of subscribers and ship out
-		require("db_info.php");
+		// Set the active MySQL database
+		$db_selected = mysql_select_db($database, $connection);
 
-		// Opens a connection to a MySQL server
-		$connection = mysql_connect ("localhost", $username, $password);
+		if ($db_selected) {
 
-		if ($connection) {
+			$today = date("w");
 
-			// Set the active MySQL database
-			$db_selected = mysql_select_db($database, $connection);
+			$sql = sprintf("SELECT * FROM calendar WHERE run_day = %s",
+				mysql_real_escape_string($today));
 
-			if ($db_selected) {
+			$result = mysql_query($sql);
 
-				//Compile the list
-				$submissions = array();
+			if ($result) {
 
-				$sql = sprintf("SELECT * FROM topics WHERE topic = '%s'",
-					mysql_real_escape_string($title));
+				while($row = mysql_fetch_array($result))
+				{
+					$title = $row["topic"];
+					$sendmail = true;
 
-				$result = mysql_query($sql);
+					if ($sendmail) {
 
-				if ($result) {
+						//Compile the list
+						$submissions = array();
 
-					while($row = mysql_fetch_array($result))
-						{
-							$reddit_data = json_decode(file_get_contents("http://www.reddit.com/r/" . $row["reddit"] . "/top/.json?limit=2&t=week"));
-							$submissions = array_merge($submissions, $reddit_data->data->children);
+						$sql = sprintf("SELECT * FROM topics WHERE topic = '%s'",
+							mysql_real_escape_string($title));
+
+						$result = mysql_query($sql);
+
+						if ($result) {
+
+							while($row = mysql_fetch_array($result))
+								{
+									$reddit_data = json_decode(file_get_contents("http://www.reddit.com/r/" . $row["reddit"] . "/top/.json?limit=2&t=week"));
+									$submissions = array_merge($submissions, $reddit_data->data->children);
+								}
+
 						}
+
+						//Get Subscriber List and mail out
+						$sql = sprintf("SELECT * FROM email_list WHERE %s = 1",
+							mysql_real_escape_string($title));
+
+						$result = mysql_query($sql);
+			
+						if ($result) {
+
+							while($row = mysql_fetch_array($result))
+						  	{
+						  		$to = $row["subscriber_email"];
+						  		$from = "autoreddit@andrewlaskey.com";
+								$headers  = "From: $from\r\n";
+							    $headers .= "Content-type: text/html\r\n"; 
+						  		$subject = "Weekly Reddit Newsletter - " . $title;
+						  		$message = "<h1>This week's top " . $title . " links:</h1>";
+
+						  		foreach ($submissions as $link) {
+									$message.= "<p>" . $link->data->title . "<br />";
+									if (strpos($link->data->url, 'imgur.com') !== false) {
+									    $message.= "<img src='" . $link->data->url . "' width='300' height='auto' alt='imgur pic'>";
+									} else {
+										$message.= $link->data->url;
+									}
+									$message.= "</p>";
+								}
+
+						  		mail($to,$subject,$message,$headers);
+						  	}
+
+						}//End sql result
+
+					}//End Send Mail
 
 				}
 
-				//Get Subscriber List and mail out
-				$sql = sprintf("SELECT * FROM email_list WHERE %s = 1",
-					mysql_real_escape_string($title));
+			}//End calendar check
 
-				$result = mysql_query($sql);
-	
-				if ($result) {
+		}//End db select
 
-					while($row = mysql_fetch_array($result))
-				  	{
-				  		$to = $row["subscriber_email"];
-				  		$from = "autoreddit@andrewlaskey.com";
-						$headers  = "From: $from\r\n";
-					    $headers .= "Content-type: text/html\r\n"; 
-				  		$subject = "Weekly Reddit Newsletter - " . $title;
-				  		$message = "<h1>This week's top " . $title . " links:</h1>";
-
-				  		foreach ($submissions as $link) {
-							$message.= "<p>" . $link->data->title . "<br />";
-							$message.= $link->data->url . "</p>";
-						}
-
-				  		mail($to,$subject,$message,$headers);
-				  	}
-
-				}//End sql result
-
-			}//End db select
-
-		}//End connection check
-
-	}//End Send Mail
-
+	}//End connection check
 
 ?>
