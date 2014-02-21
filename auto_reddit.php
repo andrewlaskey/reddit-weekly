@@ -40,7 +40,7 @@
 
         $subreddits = mysql_query($sql);
 
-        if (!$subreddits) {
+        if ($subreddits) {
 
             while($sub = mysql_fetch_array($subreddits))
             {
@@ -68,11 +68,7 @@
 
                 foreach ($submissions as $link) {
                     $message.= "<p>" . $link->data->title . "<br />";
-                    if (strpos($link->data->url, 'imgur.com') !== false) {
-                        $message.= "<img src='" . $link->data->url . "' width='300' height='auto' alt='imgur pic'>";
-                    } else {
-                        $message.= $link->data->url;
-                    }
+                    $message.= $link->data->url;
                     $message.= "</p>";
                 }
 
